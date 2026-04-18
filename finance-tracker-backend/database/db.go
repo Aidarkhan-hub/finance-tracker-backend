@@ -1,7 +1,10 @@
 package database
 
 import (
-	"github.com/Aidarkhan-hub/finance-tracker-backend/finance-tracker-backend/models"
+	"fmt"
+	"log"
+	"os"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -9,12 +12,32 @@ import (
 var DB *gorm.DB
 
 func InitDB() {
-	dsn := "host=localhost user=postgres password=1234 dbname=finance_db port=5432 sslmode=disable"
+	dsn := buildDSN()
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic("Failed to connect to database!")
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
+	log.Println("Database connected successfully")
+}
 
-	DB.AutoMigrate(&models.Transaction{}, &models.User{})
+func buildDSN() string {
+	host := getEnv("DB_HOST", "localhost")
+	port := getEnv("DB_PORT", "5432")
+	user := getEnv("DB_USER", "postgres")
+	password := getEnv("DB_PASSWORD", "1234")
+	dbname := getEnv("DB_NAME", "finance_db")
+	sslmode := getEnv("DB_SSLMODE", "disable")
+
+	return fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		host, port, user, password, dbname, sslmode,
+	)
+}
+
+func getEnv(key, fallback string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return fallback
 }
